@@ -36,6 +36,11 @@ inline float l1_norm(int i0, int j0, int i1, int j1) {
   return std::abs(i0 - i1) + std::abs(j0 - j1);
 }
 
+// L_2 norm
+inline float l2_norm(int i0, int j0, int i1, int j1) {
+    return std::pow(i0 - i1, 2) + std::pow(j0 - j1, 2);
+}
+
 
 // weights:        flattened h x w grid of costs
 // h, w:           height and width of grid
@@ -49,13 +54,15 @@ static PyObject *astar(PyObject *self, PyObject *args) {
   int start;
   int goal;
   int diag_ok;
+  int costfn;
 
   if (!PyArg_ParseTuple(
-        args, "Oiiiii", // i = int, O = object
+        args, "Oiiiiii", // i = int, O = object
         &weights_object,
         &h, &w,
         &start, &goal,
-        &diag_ok))
+        &diag_ok,
+        &costfn))
     return NULL;
 
   float* weights = (float*) weights_object->data;
@@ -102,15 +109,27 @@ static PyObject *astar(PyObject *self, PyObject *args) {
       if (nbrs[i] >= 0) {
         // the sum of the cost so far and the cost of this move
         float new_cost = costs[cur.idx] + weights[nbrs[i]];
+
+        // account for moving diagonally
+        if (i == 0 || i == 2 || i == 5 || i == 7){
+            new_cost += std::sqrt(2.0) - 1.0;
+        }
+
         if (new_cost < costs[nbrs[i]]) {
           // estimate the cost to the goal based on legal moves
-          if (diag_ok) {
-            heuristic_cost = linf_norm(nbrs[i] / w, nbrs[i] % w,
+          if (costfn == 3) {
+              heuristic_cost = linf_norm(nbrs[i] / w, nbrs[i] % w,
+                                         goal / w, goal % w);
+          } else if (costfn == 2) {
+              heuristic_cost = l2_norm(nbrs[i] / w, nbrs[i] % w,
                                        goal    / w, goal    % w);
-          }
-          else {
-            heuristic_cost = l1_norm(nbrs[i] / w, nbrs[i] % w,
+          } else if (costfn == 1){
+              heuristic_cost = l1_norm(nbrs[i] / w, nbrs[i] % w,
                                      goal    / w, goal    % w);
+          } else if (costfn == 0){
+              heuristic_cost = 0.0;
+          } else {
+              throw std::runtime_error("Unknown costfn");
           }
 
           // paths with lower expected cost are explored first

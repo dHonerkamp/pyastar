@@ -19,6 +19,7 @@ pyastar.astar.argtypes = [
     ctypes.c_int,   # start index in flattened grid
     ctypes.c_int,   # goal index in flattened grid
     ctypes.c_bool,  # allow diagonal
+    ctypes.c_int
 ]
 
 
@@ -26,7 +27,9 @@ def astar_path(
         weights: np.ndarray,
         start: Tuple[int, int],
         goal: Tuple[int, int],
-        allow_diagonal: bool = False) -> Optional[np.ndarray]:
+        costfn: str,
+        allow_diagonal: bool = False,
+        ) -> Optional[np.ndarray]:
     assert weights.dtype == np.float32, (
         f"weights must have np.float32 data type, but has {weights.dtype}"
     )
@@ -43,11 +46,22 @@ def astar_path(
             goal[1] < 0 or goal[1] >= weights.shape[1]):
         raise ValueError(f"Goal of {goal} lies outside grid.")
 
+    if costfn == 'l1':
+        costfn = 1
+    elif costfn == 'l2':
+        costfn = 2
+    elif costfn == 'linf':
+        costfn = 3
+    elif costfn == 'djikstra':
+        costfn = 0
+    else:
+        raise ValueError(costfn)
+
     height, width = weights.shape
     start_idx = np.ravel_multi_index(start, (height, width))
     goal_idx = np.ravel_multi_index(goal, (height, width))
 
     path = pyastar.astar.astar(
-        weights.flatten(), height, width, start_idx, goal_idx, allow_diagonal,
+        weights.flatten(), height, width, start_idx, goal_idx, allow_diagonal, costfn
     )
     return path
