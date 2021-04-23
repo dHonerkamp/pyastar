@@ -80,6 +80,7 @@ static PyObject *astar(PyObject *self, PyObject *args) {
   nodes_to_visit.push(start_node);
 
   int* nbrs = new int[8];
+  float sqrt_two = std::sqrt(2.0);
 
   while (!nodes_to_visit.empty()) {
     // .top() doesn't actually remove the node
@@ -95,24 +96,25 @@ static PyObject *astar(PyObject *self, PyObject *args) {
     int row = cur.idx / w;
     int col = cur.idx % w;
     // check bounds and find up to eight neighbors: top to bottom, left to right
-    nbrs[0] = (diag_ok && row > 0 && col > 0)          ? cur.idx - w - 1   : -1;
-    nbrs[1] = (row > 0)                                ? cur.idx - w       : -1;
-    nbrs[2] = (diag_ok && row > 0 && col + 1 < w)      ? cur.idx - w + 1   : -1;
-    nbrs[3] = (col > 0)                                ? cur.idx - 1       : -1;
-    nbrs[4] = (col + 1 < w)                            ? cur.idx + 1       : -1;
-    nbrs[5] = (diag_ok && row + 1 < h && col > 0)      ? cur.idx + w - 1   : -1;
-    nbrs[6] = (row + 1 < h)                            ? cur.idx + w       : -1;
+    nbrs[0] = (row > 0)                                ? cur.idx - w       : -1;
+    nbrs[1] = (col > 0)                                ? cur.idx - 1       : -1;
+    nbrs[2] = (col + 1 < w)                            ? cur.idx + 1       : -1;
+    nbrs[3] = (row + 1 < h)                            ? cur.idx + w       : -1;
+    nbrs[4] = (diag_ok && row > 0 && col > 0)          ? cur.idx - w - 1   : -1;
+    nbrs[5] = (diag_ok && row > 0 && col + 1 < w)      ? cur.idx - w + 1   : -1;
+    nbrs[6] = (diag_ok && row + 1 < h && col > 0)      ? cur.idx + w - 1   : -1;
     nbrs[7] = (diag_ok && row + 1 < h && col + 1 < w ) ? cur.idx + w + 1   : -1;
 
-    float heuristic_cost;
+    float heuristic_cost, new_cost;
     for (int i = 0; i < 8; ++i) {
       if (nbrs[i] >= 0) {
         // the sum of the cost so far and the cost of this move
-        float new_cost = costs[cur.idx] + weights[nbrs[i]];
-
-        // account for moving diagonally
-        if (i == 0 || i == 2 || i == 5 || i == 7){
-            new_cost += std::sqrt(2.0) - 1.0;
+        if (i > 3){
+            // moving diagonally
+            new_cost = costs[cur.idx] + sqrt_two * weights[nbrs[i]];
+        } else {
+            // moving straight
+            new_cost = costs[cur.idx] + weights[nbrs[i]];
         }
 
         if (new_cost < costs[nbrs[i]]) {
