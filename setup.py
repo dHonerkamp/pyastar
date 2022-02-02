@@ -16,7 +16,7 @@ class build_ext(_build_ext):
 
 astar_module = Extension(
     'pyastar.astar', sources=['src/cpp/astar.cpp'],
-    extra_compile_args=["-O3", "-Wall", "-shared", "-fpic", "-std=c++11"],
+    extra_compile_args=["-O3", "-Wall", "-shared", "-fpic"],
 )
 
 
