@@ -4,7 +4,7 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include <iostream>
-
+#include <stdexcept>
 
 const float INF = std::numeric_limits<float>::infinity();
 
